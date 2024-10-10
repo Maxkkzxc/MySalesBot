@@ -1,22 +1,32 @@
-# Telegram Bot for Ordering Drinks
-This project is a Telegram bot that allows users to order drinks. Users can select drinks from the available menu, add them to the cart, choose a pickup location and specify a time. Orders are processed using Web API, providing updated stock balances and the ability for the administrator to confirm or cancel orders.
+# Telegram Bot for Drink Sales with MAUI Admin App
+
+This project is a **Telegram bot** designed for selling drinks, paired with a **MAUI application** for administration. Users can place orders for drinks via the Telegram bot, while administrators can manage inventory and orders through the MAUI app.
 
 ## Functionality
-- View available drinks
-- Add drinks to cart
-- Selecting the place and time of order pickup
-- Confirm and cancel orders
+
+### Telegram Bot
+- Browse available drinks
+- Place orders by selecting drinks from the menu
+- Receive updates on order status
+- Interact with users through Telegram messages
+
+### MAUI Admin App
+- Manage drink inventory (add, update, delete drinks)
+- View current stock levels
+- Process orders and manage order status
+- User-friendly interface for administrators
 
 ## Technologies
 - C#
 - .NET 8
 - Telegram.Bot
 - Entity Framework
-- Web API
+- ASP.NET Web API
+- MAUI
 
 ## Installation
-- Clone the repository.
-- Configure the connection string to the database.
-- Run the application and get a token for the Telegram bot.
-- Configure the bot using the token.
-- Launch
+1. Clone the repository.
+2. Configure the connection string to the database in the MAUI app.
+3. Run the application and obtain a token for the Telegram bot.
+4. Set up the bot using the token.
+5. Launch both the Telegram bot and the MAUI admin application.
