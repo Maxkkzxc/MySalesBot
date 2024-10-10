@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MySalesBot.Models;
+using MyApp.Data;
+using MyApp.Models;
 
-namespace MySalesBot.Controllers
+namespace MyApp.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -68,7 +69,7 @@ namespace MySalesBot.Controllers
             return NoContent();
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDrink(int id)
         {
             var drink = await _context.Drinks.FindAsync(id);

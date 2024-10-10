@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using MySalesBot;
+using MyApp.Data;
 
 #nullable disable
 
-namespace MySalesBot.Migrations
+namespace MyApp.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20241008163628_InitialCreate")]

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TelegramBotApp.DrinksPage">
+
+    <StackLayout Padding="20">
+        <Button Text="Добавить напиток" Clicked="OnAddDrinkButtonClicked" />
+        <ListView ItemsSource="{Binding Drinks}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <StackLayout Orientation="Horizontal" Padding="10">
+                            <Label Text="{Binding Name}" FontSize="Medium" />
+                            <Label Text="{Binding Price, StringFormat='Цена: {0:C}'}" FontSize="Medium" Margin="10,0" />
+                            <Label Text="{Binding Stock, StringFormat='Количество: {0}'}" FontSize="Medium" Margin="10,0" />
+                            <Button Text="Удалить" Clicked="OnDeleteDrinkButtonClicked" BindingContext="{Binding .}"/>
+                        </StackLayout>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </StackLayout>
+
+</ContentPage>

@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MySalesBot.Models;
+using MyApp.Data;
+using MyApp.Models;
 
-namespace MySalesBot.Controllers
+namespace MyApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

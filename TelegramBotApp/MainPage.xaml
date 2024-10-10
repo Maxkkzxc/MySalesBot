@@ -1,0 +1,13 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TelegramBotApp.MainPage">
+
+    <StackLayout Padding="20">
+        <Label Text="Добро пожаловать в приложение управления заказами"
+               FontSize="24"
+               HorizontalOptions="Center" />
+
+        <Button Text="Управление напитками" Clicked="OnManageDrinksClicked" />
+    </StackLayout>
+
+</ContentPage>

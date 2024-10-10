@@ -1,7 +1,8 @@
-
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using MyApp.Data;
 
-namespace MySalesBot
+namespace MyApp
 {
     public class Program
     {
@@ -19,6 +20,9 @@ namespace MySalesBot
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddHostedService<TelegramBotBackgroundService>();
+
 
             var app = builder.Build();
 

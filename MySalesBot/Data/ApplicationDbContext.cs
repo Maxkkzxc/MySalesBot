@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MySalesBot.Models;
+using MyApp.Models;
 
-namespace MySalesBot
+namespace MyApp.Data
 {
     public class ApplicationDbContext : DbContext
     {
@@ -27,6 +27,4 @@ namespace MySalesBot
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
-
-
 }
