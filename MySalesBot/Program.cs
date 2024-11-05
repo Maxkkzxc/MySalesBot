@@ -24,6 +24,7 @@ namespace MyApp
             builder.Services.AddHostedService<TelegramBotBackgroundService>();
 
 
+
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>
@@ -37,7 +38,7 @@ namespace MyApp
 
             builder.WebHost.ConfigureKestrel(options =>
             {
-                options.ListenAnyIP(5000); // Слушать порт 5000 на любом IP-адресе
+                options.ListenAnyIP(5000); 
             });
 
             var app = builder.Build();
