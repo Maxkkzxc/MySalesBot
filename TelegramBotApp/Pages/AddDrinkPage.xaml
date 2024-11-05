@@ -1,20 +1,23 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="TelegramBotApp.AddDrinkPage">
+             x:Class="TelegramBotApp.AddDrinkPage"
+             BackgroundColor="#121212">
 
     <StackLayout Padding="20">
-        <Label Text="Добавить новый напиток" FontSize="20" />
+        <Label Text="Добавить новый напиток" FontSize="20" TextColor="White" />
 
-        <Label Text="Название" />
-        <Entry x:Name="DrinkNameEntry" />
+        <Label Text="Название" TextColor="White" />
+        <Entry x:Name="DrinkNameEntry" TextColor="White" BackgroundColor="#1E1E1E" />
 
-        <Label Text="Цена" />
-        <Entry x:Name="DrinkPriceEntry" Keyboard="Numeric" />
+        <Label Text="Описание" TextColor="White" />
+        <Entry x:Name="DrinkDescEntry" TextColor="White" BackgroundColor="#1E1E1E" />
 
-        <Label Text="Количество" />
-        <Entry x:Name="DrinkStockEntry" Keyboard="Numeric" />
+        <Label Text="Цена" TextColor="White" />
+        <Entry x:Name="DrinkPriceEntry" Keyboard="Numeric" TextColor="White" BackgroundColor="#1E1E1E" />
 
-        <Button Text="Сохранить" Clicked="OnSaveDrinkButtonClicked" />
+        <Label Text="Количество" TextColor="White" />
+        <Entry x:Name="DrinkStockEntry" Keyboard="Numeric" TextColor="White" BackgroundColor="#1E1E1E" />
+
+        <Button Text="Сохранить" Clicked="OnSaveDrinkButtonClicked" BackgroundColor="#4CAF50" TextColor="White"/>
     </StackLayout>
-
 </ContentPage>

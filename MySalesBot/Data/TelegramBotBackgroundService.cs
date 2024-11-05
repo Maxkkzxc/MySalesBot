@@ -2,16 +2,21 @@
 {
     public class TelegramBotBackgroundService : BackgroundService
     {
-        private readonly TelegramBot _telegramBot;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public TelegramBotBackgroundService(IConfiguration configuration)
+        public TelegramBotBackgroundService(IServiceScopeFactory scopeFactory)
         {
-            _telegramBot = new TelegramBot(configuration);
+            _scopeFactory = scopeFactory;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await _telegramBot.StartAsync(stoppingToken);
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                var bot = new TelegramBot(_scopeFactory, configuration);
+                await bot.StartAsync(stoppingToken);
+            }
         }
     }
 }

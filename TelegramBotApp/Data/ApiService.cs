@@ -1,16 +1,15 @@
-﻿using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
+﻿using Microsoft.Extensions.Configuration;
 using MyApp.Models;
+using System.Net.Http.Json;
 
 public class ApiService
 {
     private readonly HttpClient _httpClient;
 
-    public ApiService(string baseUrl)
+    public ApiService(IConfiguration configuration)
     {
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://localhost:5000/api/") };
+        var baseUrl = configuration["ApiSettings:BaseUrl"];
+        _httpClient = new HttpClient { BaseAddress = new Uri(baseUrl) };
     }
 
     public async Task<List<Drink>> GetDrinksAsync()
@@ -26,9 +25,28 @@ public class ApiService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteDrinkAsync(int Id)
+    public async Task DeleteDrinkAsync(int id)
     {
-        var response = await _httpClient.DeleteAsync($"drinks/{Id}");
+        var response = await _httpClient.DeleteAsync($"drinks/{id}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<Order>> GetOrdersAsync()
+    {
+        var response = await _httpClient.GetAsync("orders");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<Order>>();
+    }
+
+    public async Task ConfirmOrderAsync(int id)
+    {
+        var response = await _httpClient.PostAsync($"orders/{id}/confirm", null);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task CancelOrderAsync(int id)
+    {
+        var response = await _httpClient.PostAsync($"orders/{id}/cancel", null);
         response.EnsureSuccessStatusCode();
     }
 }

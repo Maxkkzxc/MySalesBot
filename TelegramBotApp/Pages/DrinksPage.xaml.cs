@@ -1,49 +1,95 @@
-using System.Collections.ObjectModel;
+using Microsoft.Extensions.Configuration;
 using MyApp.Models;
+using System.Collections.ObjectModel;
 
 namespace TelegramBotApp
 {
     public partial class DrinksPage : ContentPage
     {
+        private readonly IConfiguration _configuration;
         private readonly ApiService _apiService;
         public ObservableCollection<Drink> Drinks { get; set; }
 
-        public DrinksPage()
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get => _isBusy;
+            set
+            {
+                _isBusy = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public DrinksPage(IConfiguration configuration)
         {
             InitializeComponent();
-            _apiService = new ApiService("http://localhost:5000/api/");
+            _apiService = new ApiService(configuration);
             Drinks = new ObservableCollection<Drink>();
             BindingContext = this;
 
             LoadDrinks();
         }
 
+
+        private async void OnRefreshRequested(object sender, EventArgs e)
+        {
+            await UpdateDrinkList();
+            refreshView.IsRefreshing = false;
+        }
+
         private async void LoadDrinks()
         {
-            var drinks = await _apiService.GetDrinksAsync();
-            foreach (var drink in drinks)
+            if (IsBusy) return;
+            IsBusy = true;
+            try
             {
-                Drinks.Add(drink);
+                var drinks = await _apiService.GetDrinksAsync();
+                Drinks.Clear();
+                foreach (var drink in drinks)
+                {
+                    Drinks.Add(drink);
+                }
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Îøèáêà", ex.Message, "OK");
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
 
         public async Task UpdateDrinkList()
         {
-            Drinks.Clear(); 
-            var drinks = await _apiService.GetDrinksAsync(); 
-            foreach (var drink in drinks)
+            if (IsBusy) return;
+            IsBusy = true;
+            try
             {
-                Drinks.Add(drink); 
+                Drinks.Clear();
+                var drinks = await _apiService.GetDrinksAsync();
+                foreach (var drink in drinks)
+                {
+                    Drinks.Add(drink);
+                }
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Îøèáêà", ex.Message, "OK");
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
 
-
         private async void OnAddDrinkButtonClicked(object sender, EventArgs e)
         {
-            var addDrinkPage = new AddDrinkPage();
+            var addDrinkPage = new AddDrinkPage(_configuration);
             addDrinkPage.DrinkAdded += (drink) =>
             {
-                Drinks.Add(drink); 
+                Drinks.Add(drink);
             };
 
             await Navigation.PushAsync(addDrinkPage);

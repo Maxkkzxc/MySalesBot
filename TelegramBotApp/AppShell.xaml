@@ -1,15 +1,23 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<Shell
-    x:Class="TelegramBotApp.AppShell"
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:TelegramBotApp"
-    Shell.FlyoutBehavior="Disabled"
-    Title="TelegramBotApp">
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:local="clr-namespace:TelegramBotApp"
+       x:Class="TelegramBotApp.AppShell"
+       BackgroundColor="#121212">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <Shell.TabBarBackgroundColor>
+        <Color>#121212</Color>
+    </Shell.TabBarBackgroundColor>
 
+    <Shell.TabBarTitleColor>
+        <Color>White</Color>
+    </Shell.TabBarTitleColor>
+
+    <Shell.TabBarUnselectedColor>
+        <Color>White</Color>
+    </Shell.TabBarUnselectedColor>
+
+    <TabBar>
+        <ShellContent Title="Напитки" ContentTemplate="{DataTemplate local:DrinksPage}" Route="DrinksPage"/>
+        <ShellContent Title="Заказы" ContentTemplate="{DataTemplate local:OrdersPage}" Route="OrdersPage"/>
+    </TabBar>
 </Shell>

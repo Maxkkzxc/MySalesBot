@@ -1,12 +1,13 @@
-﻿namespace TelegramBotApp
+﻿using Microsoft.Extensions.Configuration;
+
+namespace TelegramBotApp
 {
     public partial class App : Application
     {
-        public App()
+        public App(IConfiguration configuration)
         {
             InitializeComponent();
-
-            MainPage = new AppShell();
+            MainPage = new AppShell(configuration);
         }
     }
 }

@@ -1,5 +1,5 @@
+using Microsoft.Extensions.Configuration;
 using MyApp.Models;
-using System;
 
 namespace TelegramBotApp
 {
@@ -9,10 +9,10 @@ namespace TelegramBotApp
 
         public event Action<Drink> DrinkAdded;
 
-        public AddDrinkPage()
+        public AddDrinkPage(IConfiguration configuration)
         {
             InitializeComponent();
-            _apiService = new ApiService("http://localhost:5000/api/");
+            _apiService = new ApiService(configuration);
         }
 
         private async void OnSaveDrinkButtonClicked(object sender, EventArgs e)
@@ -20,19 +20,21 @@ namespace TelegramBotApp
             string name = DrinkNameEntry.Text;
             decimal price = decimal.Parse(DrinkPriceEntry.Text);
             int stock = int.Parse(DrinkStockEntry.Text);
+            string desc = DrinkDescEntry.Text;
 
             var newDrink = new Drink
             {
                 Name = name,
                 Price = price,
-                Stock = stock
+                Stock = stock,
+                Description = desc
             };
 
             await _apiService.AddDrinkAsync(newDrink);
 
             if (Navigation.NavigationStack[Navigation.NavigationStack.Count - 2] is DrinksPage drinksPage)
             {
-                await drinksPage.UpdateDrinkList(); // Метод для получения актуального списка
+                await drinksPage.UpdateDrinkList();
             }
 
             await Navigation.PopAsync();

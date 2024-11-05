@@ -1,0 +1,62 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="TelegramBotApp.OrdersPage"
+             Title="Управление заказами"
+             Padding="10"
+             BackgroundColor="#1E1E1E"
+             Shell.TitleColor="White">
+
+    <RefreshView x:Name="refreshView" IsRefreshing="{Binding IsBusy}" Refreshing="OnRefreshRequested">
+        <CollectionView x:Name="OrdersList" ItemsSource="{Binding Orders}"
+                        VerticalOptions="FillAndExpand"
+                        HorizontalOptions="FillAndExpand">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Span="1" Orientation="Vertical"/>
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="10" Margin="5" BackgroundColor="#232323" CornerRadius="10">
+                        <StackLayout>
+                            <Label Text="{Binding UserName}" FontSize="Medium" FontAttributes="Bold" HorizontalOptions="Center" TextColor="White" />
+                            <Label Text="{Binding UserId}" FontSize="Medium" FontAttributes="Bold" HorizontalOptions="Center" TextColor="White" />
+                            <Label Text="{Binding OrderDate, StringFormat='Order Date: {0:MM/dd/yyyy HH:mm}'}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
+                            <Label Text="{Binding PickupLocation}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
+                            <Label Text="{Binding PickupTime, StringFormat='Pickup Time: {0:MM/dd/yyyy HH:mm}'}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
+                            <toolkit:Expander>
+                                <toolkit:Expander.Header>
+                                    <Label Text="Заказ" FontAttributes="Bold" FontSize="Medium" TextColor="White"/>
+                                </toolkit:Expander.Header>
+                                <CollectionView ItemsSource="{Binding Items}">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackLayout Orientation="Vertical" Spacing="5">
+                                                <Label Text="{Binding Drink.Name}" FontSize="Small" TextColor="White" />
+                                                <Label Text="{Binding Drink.Description}" FontSize="Small" TextColor="White" />
+                                                <Label Text="{Binding Quantity, StringFormat='Кол-во: {0}'}" FontSize="Small" TextColor="White" />
+                                                <BoxView HeightRequest="10" Color="#388211" />
+                                            </StackLayout>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </toolkit:Expander>
+
+                            <StackLayout Orientation="Horizontal" Spacing="10" HorizontalOptions="Center" Margin="0,10,0,0">
+                                <Button Text="Confirm"
+                                        Command="{Binding BindingContext.ConfirmOrderCommand, Source={x:Reference OrdersList}}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="Green"
+                                        TextColor="White"/>
+                                <Button Text="Cancel"
+                                        Command="{Binding BindingContext.CancelOrderCommand, Source={x:Reference OrdersList}}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="Red"
+                                        TextColor="White"/>
+                            </StackLayout>
+                        </StackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>
