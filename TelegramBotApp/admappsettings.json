@@ -1,0 +1,8 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Add you connection string here"
+  },
+  "ApiSettings": {
+    "BaseUrl": "Add you webapi url here"
+  }
+}

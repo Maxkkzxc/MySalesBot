@@ -10,6 +10,7 @@ namespace MyApp.Data
         public DbSet<Drink> Drinks { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Statistics> Statistics { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,6 +26,12 @@ namespace MyApp.Data
                 .HasMany(o => o.Items)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Drink>()
+                .Property(d => d.Price)
+                .HasColumnType("DECIMAL(10, 2)");
+
+            base.OnModelCreating(modelBuilder);
         }
     }
 }

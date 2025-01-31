@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Text;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Data;
 using MyApp.Models;
@@ -10,10 +11,12 @@ namespace MyApp.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public OrdersController(ApplicationDbContext context)
+        public OrdersController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -97,20 +100,55 @@ namespace MyApp.Controllers
         [HttpPost("{id}/confirm")]
         public async Task<IActionResult> ConfirmOrder(int id)
         {
-            var order = await _context.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id);
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                .ThenInclude(i => i.Drink)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
             if (order == null) return NotFound();
+
+            var message = new StringBuilder();
+            message.AppendLine("Завершен заказ:");
+            message.AppendLine($"ID заказа: {order.Id}");
+            message.AppendLine($"Заказчик: {order.UserName} (ID: {order.UserId})");
+            message.AppendLine($"Место получения: {order.PickupLocation}");
+            message.AppendLine($"Время получения: {order.PickupTime}");
+            message.AppendLine($"Дата заказа: {order.OrderDate}");
+            message.AppendLine("Состав заказа:");
+
+            decimal totalAmount = 0;
+            int totalItemsSold = 0;
 
             foreach (var item in order.Items)
             {
-                var drink = await _context.Drinks.FindAsync(item.DrinkId);
-                if (drink != null)
-                {
-                    drink.Stock -= item.Quantity;
-                }
+                var itemAmount = item.Quantity * (item.Drink?.Price ?? 0);
+                totalAmount += itemAmount;
+                totalItemsSold += item.Quantity;
+                message.AppendLine($"- {item.Drink?.Name ?? "Неизвестно"} x{item.Quantity} - {itemAmount:F2} BYN");
+            }
+
+            message.AppendLine($"Общая сумма: {totalAmount:F2} BYN");
+
+            string botToken = _configuration["Telegram:BotToken"];
+            string chatId = _configuration["Telegram:ChatId"];
+
+            using var httpClient = new HttpClient();
+            var url = $"https://api.telegram.org/bot{botToken}/sendMessage";
+            var payload = new
+            {
+                chat_id = chatId,
+                text = message.ToString()
+            };
+
+            var response = await httpClient.PostAsJsonAsync(url, payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode(500, "Ошибка отправки сообщения в Telegram.");
             }
 
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
+
             return NoContent();
         }
 
@@ -128,7 +166,6 @@ namespace MyApp.Controllers
                     drink.Stock += item.Quantity;
                 }
             }
-
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
             return NoContent();

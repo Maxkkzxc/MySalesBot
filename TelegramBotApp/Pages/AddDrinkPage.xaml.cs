@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using MyApp.Models;
+using TelegramBotApp.Data;
 
 namespace TelegramBotApp
 {
@@ -9,10 +10,10 @@ namespace TelegramBotApp
 
         public event Action<Drink> DrinkAdded;
 
-        public AddDrinkPage(IConfiguration configuration)
+        public AddDrinkPage(string baseUrl)
         {
             InitializeComponent();
-            _apiService = new ApiService(configuration);
+            _apiService = new ApiService(baseUrl);
         }
 
         private async void OnSaveDrinkButtonClicked(object sender, EventArgs e)
@@ -34,7 +35,10 @@ namespace TelegramBotApp
 
             if (Navigation.NavigationStack[Navigation.NavigationStack.Count - 2] is DrinksPage drinksPage)
             {
-                await drinksPage.UpdateDrinkList();
+                if (drinksPage.BindingContext is DrinksViewModel viewModel)
+                {
+                    await viewModel.LoadDrinks();
+                }
             }
 
             await Navigation.PopAsync();

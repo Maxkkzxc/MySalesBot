@@ -19,5 +19,6 @@
     <TabBar>
         <ShellContent Title="Напитки" ContentTemplate="{DataTemplate local:DrinksPage}" Route="DrinksPage"/>
         <ShellContent Title="Заказы" ContentTemplate="{DataTemplate local:OrdersPage}" Route="OrdersPage"/>
+        <ShellContent Title="Статистика" ContentTemplate="{DataTemplate local:StatisticsPage}" />
     </TabBar>
 </Shell>

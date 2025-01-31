@@ -1,22 +1,16 @@
-<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:TelegramBotApp"
              x:Class="TelegramBotApp.DrinksPage"
-             Padding="10"
+             BackgroundColor="#121212"
              Title="Напитки"
-             Shell.TitleColor="White"
-             BackgroundColor="#1E1E1E">
+             Shell.TitleColor="White">
 
     <RefreshView x:Name="refreshView" IsRefreshing="{Binding IsBusy}" Refreshing="OnRefreshRequested">
         <StackLayout>
-            <ActivityIndicator IsRunning="{Binding IsBusy}" 
-                               IsVisible="{Binding IsBusy}" 
-                               HorizontalOptions="Center" 
-                               VerticalOptions="Center" 
-                               Color="White" />
             <Button Text="Добавить напиток" 
                     Clicked="OnAddDrinkButtonClicked" 
-                    BackgroundColor="#4CAF50" 
+                    BackgroundColor="green" 
                     TextColor="White" 
                     HorizontalOptions="FillAndExpand" 
                     Margin="0,10,0,10"/>
@@ -30,7 +24,6 @@
                     <DataTemplate>
                         <Frame Padding="10" Margin="5" BackgroundColor="#232323" CornerRadius="10">
                             <StackLayout>
-
                                 <Label Text="{Binding Name}" 
                                        FontSize="Medium" 
                                        FontAttributes="Bold" 
@@ -49,13 +42,19 @@
                                        FontSize="Medium" 
                                        HorizontalOptions="Center" 
                                        TextColor="White" />
-                                <Button Text="Удалить" 
-                                        Clicked="OnDeleteDrinkButtonClicked" 
-                                        BindingContext="{Binding .}" 
-                                        BackgroundColor="#F44336" 
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="10" Margin="0,5,0,0">
+                                    <Button Text="Удалить" 
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type local:DrinksPage}}, Path=BindingContext.DeleteDrinkCommand}" 
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="Red" 
                                         TextColor="White" 
-                                        HorizontalOptions="Center"
-                                        Margin="0,5,0,0"/>
+                                        WidthRequest="120" />
+                                    <Button Text="Изменить" 
+                                        Clicked="OnEditDrinkButtonClicked" 
+                                        BackgroundColor="#2492fa" 
+                                        TextColor="White" 
+                                        WidthRequest="120" />
+                                </HorizontalStackLayout>
                             </StackLayout>
                         </Frame>
                     </DataTemplate>

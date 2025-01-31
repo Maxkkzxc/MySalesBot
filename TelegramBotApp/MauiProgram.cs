@@ -28,8 +28,18 @@ namespace TelegramBotApp
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
+
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
+            {
+                var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+                    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+                options.UseMySql(
+                    connectionString,
+                    new MySqlServerVersion(new Version(5, 5))
+                );
+            });
+
 
             builder.Services.AddSingleton<IConfiguration>(config);
             builder.Services.AddHttpClient("MyApiClient", client =>
@@ -38,9 +48,26 @@ namespace TelegramBotApp
             });
 
             builder.Services.AddTransient<MainPage>();
-            builder.Services.AddTransient<DrinksPage>();
-            builder.Services.AddTransient<OrdersPage>();
+            builder.Services.AddTransient<DrinksPage>((serviceProvider) =>
+            {
+                var config = serviceProvider.GetRequiredService<IConfiguration>();
+                string baseUrl = config["ApiSettings:BaseUrl"];
+                return new DrinksPage(baseUrl);
+            });
+            builder.Services.AddTransient<OrdersPage>((serviceProvider) =>
+            {
+                var config = serviceProvider.GetRequiredService<IConfiguration>();
+                string baseUrl = config["ApiSettings:BaseUrl"];
+                return new OrdersPage(baseUrl);
+            });
             builder.Services.AddTransient<AddDrinkPage>();
+            builder.Services.AddTransient<StatisticsPage>((serviceProvider) =>
+            {
+                var config = serviceProvider.GetRequiredService<IConfiguration>();
+                string baseUrl = config["ApiSettings:BaseUrl"];
+                return new StatisticsPage(baseUrl);
+            });
+
 
 #if DEBUG
             builder.Logging.AddDebug();

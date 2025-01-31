@@ -1,27 +1,26 @@
-using Microsoft.Extensions.Configuration;
 using TelegramBotApp.Data;
 
 namespace TelegramBotApp
 {
-    public partial class OrdersPage : ContentPage
+    public partial class StatisticsPage : ContentPage
     {
         private readonly ApiService _apiService;
 
-        public OrdersPage(string baseUrl)
+        public StatisticsPage(string baseUrl)
         {
             InitializeComponent();
             _apiService = new ApiService(baseUrl);
-            BindingContext = new OrdersViewModel(baseUrl);
+            BindingContext = new StatisticsViewModel(baseUrl);
         }
 
         private async void OnRefreshRequested(object sender, EventArgs e)
         {
-            var viewModel = BindingContext as OrdersViewModel;
+            var viewModel = BindingContext as StatisticsViewModel;
             if (viewModel != null)
             {
-                await viewModel.LoadOrders();
+                await viewModel.LoadStatistics();
+                refreshView.IsRefreshing = false;
             }
-            refreshView.IsRefreshing = false;
         }
     }
 }

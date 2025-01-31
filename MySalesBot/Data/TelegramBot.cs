@@ -10,8 +10,20 @@ namespace MyApp.Data
 {
     public class TelegramBot
     {
+
+        private readonly Dictionary<long, UserSession> _userSessions = new();
+
+        private class UserSession
+        {
+            public List<OrderItem> Cart { get; set; } = new List<OrderItem>();
+            public int CurrentDrinkId { get; set; }
+            public string Location { get; set; }
+            public DateTime PickupTime { get; set; }
+        }
+
         private readonly TelegramBotClient _botClient;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly string _logChatId;
         private List<OrderItem> _cart;
         private string _location;
         private DateTime _pickupTime;
@@ -22,6 +34,7 @@ namespace MyApp.Data
             _scopeFactory = scopeFactory;
             var token = configuration["TelegramBotToken"];
             _botClient = new TelegramBotClient(token);
+            _logChatId = configuration["LogChatId"];
             _cart = new List<OrderItem>();
         }
 
@@ -41,95 +54,135 @@ namespace MyApp.Data
 
         private async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
+            long chatId = update.Message?.Chat?.Id ?? update.CallbackQuery?.Message?.Chat?.Id ?? 0;
+
+            if (chatId == 0) return;
+
+            if (!_userSessions.ContainsKey(chatId))
+            {
+                _userSessions[chatId] = new UserSession();
+            }
+
+            var session = _userSessions[chatId];
+
             if (update.Type == UpdateType.Message && update.Message.Text != null)
             {
-                if (update.Message.Text.ToLower() == "/start")
-                {
-                    _cart.Clear();
-                    var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Купить", "buy")
-                    });
+                string userMessage = update.Message.Text.ToLower();
 
-                    await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Привет! Я бот. Нажмите 'Купить', чтобы начать.", replyMarkup: inlineKeyboard);
+                if (userMessage == "/start")
+                {
+                    session.Cart.Clear();
+                    var inlineKeyboard = new InlineKeyboardMarkup(new[] { InlineKeyboardButton.WithCallbackData("Купить", "buy") });
+                    await botClient.SendTextMessageAsync(chatId, "Привет! Я бот. Нажмите 'Купить', чтобы начать.", replyMarkup: inlineKeyboard);
                     return;
                 }
-                else if (int.TryParse(update.Message.Text, out int quantity))
-                {
-                    if (await ValidateDrinkQuantity(botClient, quantity))
-                    {
-                        AddToCart(quantity);
-                        await botClient.SendTextMessageAsync(update.Message.Chat.Id, $"Вы добавили {quantity} штук в корзину.");
 
-                        var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData("Готово", "done"),
-                            InlineKeyboardButton.WithCallbackData("Выбрать другой напиток", "buy")
-                        });
-                        await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Что вы хотите сделать дальше?", replyMarkup: inlineKeyboard);
+                if (session.CurrentDrinkId == 0)
+                {
+                    await botClient.SendTextMessageAsync(chatId, "Сначала выберите товар, прежде чем указать количество.");
+                    return;
+                }
+
+                if (userMessage == "купить")
+                {
+                    await ShowDrinks(botClient, chatId, session);
+                    return;
+                }
+
+                if (int.TryParse(userMessage, out int quantity))
+                {
+                    if (quantity <= 0)
+                    {
+                        await botClient.SendTextMessageAsync(chatId, "Количество товара должно быть положительным числом.");
+                        return;
+                    }
+
+                    if (await ValidateDrinkQuantity(botClient, quantity, session))
+                    {
+                        await AddToCart(quantity, session, botClient, chatId);
+                        await botClient.SendTextMessageAsync(chatId, $"Вы добавили {quantity} штук в корзину.");
+                        var inlineKeyboard = new InlineKeyboardMarkup(new[] {
+                    InlineKeyboardButton.WithCallbackData("Готово", "done"),
+                    InlineKeyboardButton.WithCallbackData("Выбрать другой товар", "buy")
+                });
+                        await botClient.SendTextMessageAsync(chatId, "Что вы хотите сделать дальше?", replyMarkup: inlineKeyboard);
                     }
                     else
                     {
-                        await botClient.SendTextMessageAsync(update.Message.Chat.Id, "Вы пытаетесь добавить больше напитков, чем есть в наличии.");
+                        await botClient.SendTextMessageAsync(chatId, "Недостаточно товара в наличии.");
                     }
                     return;
                 }
+                else
+                {
+                    await botClient.SendTextMessageAsync(chatId, "Пожалуйста, введите корректное количество товара.");
+                    return;
+                }
             }
-            else if (update.Type == UpdateType.CallbackQuery)
+
+            if (update.Type == UpdateType.CallbackQuery)
             {
                 if (update.CallbackQuery.Data == "buy")
                 {
-                    await botClient.SendTextMessageAsync(update.CallbackQuery.Message.Chat.Id, "Вы выбрали 'Купить'. Давайте посмотрим, какие напитки доступны.");
-
-                    using (var scope = _scopeFactory.CreateScope())
-                    {
-                        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                        var drinks = await context.Drinks.Where(d => d.Stock > 0).ToListAsync();
-                        var buttons = drinks.Select(d => InlineKeyboardButton.WithCallbackData(
-                            $"{d.Description} {d.Price.ToString("0.##")} BYN ({d.Stock})",
-                            $"drink_{d.Id}"
-                        )).ToArray();
-
-                        var inlineKeyboard = new InlineKeyboardMarkup(buttons.Select(b => new[] { b }).ToArray());
-
-                        await botClient.SendTextMessageAsync(update.CallbackQuery.Message.Chat.Id, "Доступны напитки фирмы *:", replyMarkup: inlineKeyboard);
-                    }
-
+                    await ShowDrinks(botClient, chatId, session);
                     return;
                 }
 
                 if (update.CallbackQuery.Data.StartsWith("drink_"))
                 {
-                    _currentDrinkId = int.Parse(update.CallbackQuery.Data.Split('_')[1]);
-                    await RequestDrinkQuantity(botClient, update.CallbackQuery.Message.Chat.Id);
+                    session.CurrentDrinkId = int.Parse(update.CallbackQuery.Data.Split('_')[1]);
+                    await RequestDrinkQuantity(botClient, chatId);
                     return;
                 }
 
-                if (update.CallbackQuery.Data == "done")
+                if (update.CallbackQuery.Data.StartsWith("date_"))
                 {
-                    if (_cart.Count == 0)
-                    {
-                        await botClient.SendTextMessageAsync(update.CallbackQuery.Message.Chat.Id, "Ваша корзина пуста. Пожалуйста, добавьте напитки перед оформлением заказа.");
-                        return;
-                    }
-
-                    await RequestPickupLocation(botClient, update.CallbackQuery.Message.Chat.Id);
-                    return;
-                }
-
-                if (update.CallbackQuery.Data.StartsWith("location_"))
-                {
-                    _location = update.CallbackQuery.Data.Split('_')[1];
-                    await RequestPickupTime(botClient, update.CallbackQuery.Message.Chat.Id);
+                    session.PickupTime = DateTime.Parse(update.CallbackQuery.Data.Split('_')[1]);
+                    await RequestPickupTime(botClient, chatId);
                     return;
                 }
 
                 if (update.CallbackQuery.Data.StartsWith("time_"))
                 {
-                    _pickupTime = DateTime.Parse(update.CallbackQuery.Data.Split('_')[1]);
-                    await CompleteOrder(botClient, update.CallbackQuery.Message.Chat.Id);
+                    var time = update.CallbackQuery.Data.Split('_')[1];
+                    session.PickupTime = session.PickupTime.Date.Add(TimeSpan.Parse(time));
+                    await CompleteOrder(botClient, chatId, session);
                     return;
                 }
+
+                if (update.CallbackQuery.Data == "done")
+                {
+                    if (session.Cart.Count == 0)
+                    {
+                        await botClient.SendTextMessageAsync(chatId, "Ваша корзина пуста. Пожалуйста, добавьте товары перед оформлением заказа.");
+                        return;
+                    }
+                    await RequestPickupLocation(botClient, chatId);
+                    return;
+                }
+
+                if (update.CallbackQuery.Data.StartsWith("location_"))
+                {
+                    session.Location = update.CallbackQuery.Data.Split('_')[1];
+                    await RequestPickupDate(botClient, chatId);
+                    return;
+                }
+            }
+        }
+
+        private async Task ShowDrinks(ITelegramBotClient botClient, long chatId, UserSession session)
+        {
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var drinks = await context.Drinks.Where(d => d.Stock > 0).ToListAsync();
+
+                var buttons = drinks.Select(drink =>
+                    InlineKeyboardButton.WithCallbackData($"{drink.Name} ({drink.Stock} шт.)", $"drink_{drink.Id}")
+                ).ToArray();
+
+                var keyboard = new InlineKeyboardMarkup(buttons.Select(b => new[] { b }).ToArray());
+                await botClient.SendTextMessageAsync(chatId, "Выберите товар:", replyMarkup: keyboard);
             }
         }
 
@@ -138,74 +191,102 @@ namespace MyApp.Data
             await botClient.SendTextMessageAsync(chatId, "Сколько штук? Напишите число:");
         }
 
-        private void AddToCart(int quantity)
+        private async Task AddToCart(int quantity, UserSession session, ITelegramBotClient botClient, long chatId)
         {
+            if (quantity <= 0)
+            {
+                await botClient.SendTextMessageAsync(chatId, "Количество товара не может быть меньше или равно нулю.");
+                return;
+            }
+
             using (var scope = _scopeFactory.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var drink = context.Drinks.Find(_currentDrinkId);
+                var drink = context.Drinks.Find(session.CurrentDrinkId);
 
                 if (drink != null)
                 {
-                    var existingItem = _cart.FirstOrDefault(item => item.DrinkId == drink.Id);
+                    var existingItem = session.Cart.FirstOrDefault(item => item.DrinkId == drink.Id);
                     if (existingItem != null)
                     {
                         int newQuantity = existingItem.Quantity + quantity;
-
                         if (newQuantity <= drink.Stock)
                         {
                             existingItem.Quantity = newQuantity;
                         }
                         else
                         {
-                            throw new InvalidOperationException("Вы пытаетесь добавить больше напитков, чем есть в наличии.");
+                            await botClient.SendTextMessageAsync(chatId, "Вы пытаетесь добавить больше товаров, чем есть в наличии.");
                         }
                     }
                     else
                     {
-                        var orderItem = new OrderItem
-                        {
-                            DrinkId = drink.Id,
-                            Quantity = quantity
-                        };
-                        _cart.Add(orderItem);
+                        session.Cart.Add(new OrderItem { DrinkId = drink.Id, Quantity = quantity });
                     }
                 }
             }
         }
 
-        private async Task<bool> ValidateDrinkQuantity(ITelegramBotClient botClient, int quantity)
+
+
+        private async Task<bool> ValidateDrinkQuantity(ITelegramBotClient botClient, int quantity, UserSession session)
         {
             using (var scope = _scopeFactory.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var drink = await context.Drinks.FindAsync(_currentDrinkId);
+                var drink = await context.Drinks.FindAsync(session.CurrentDrinkId);
 
                 if (drink != null)
                 {
-                    var existingItem = _cart.FirstOrDefault(item => item.DrinkId == drink.Id);
+                    var existingItem = session.Cart.FirstOrDefault(item => item.DrinkId == drink.Id);
                     int totalInCart = existingItem != null ? existingItem.Quantity : 0;
 
-                    return totalInCart + quantity <= drink.Stock;
+                    if (totalInCart + quantity > drink.Stock)
+                    {
+                        await botClient.SendTextMessageAsync(session.Cart.First().DrinkId, "Недостаточно товара в наличии.");
+                        return false;
+                    }
                 }
             }
-            return false;
+            return true;
         }
+
+
+        private async Task RequestPickupDate(ITelegramBotClient botClient, long chatId)
+        {
+            var today = DateTime.Today;
+            var availableDates = new List<string>();
+
+            for (int i = 0; i < 7; i++)
+            {
+                var date = today.AddDays(i);
+                availableDates.Add(date.ToString("yyyy-MM-dd"));
+            }
+
+            var dateButtons = availableDates.Select(date =>
+                InlineKeyboardButton.WithCallbackData(date, $"date_{date}")).ToArray();
+            var dateKeyboard = new InlineKeyboardMarkup(dateButtons.Select(b => new[] { b }).ToArray());
+
+            await botClient.SendTextMessageAsync(chatId, "Выберите дату получения:", replyMarkup: dateKeyboard);
+        }
+
 
         private async Task RequestPickupLocation(ITelegramBotClient botClient, long chatId)
         {
-            var locations = new[] { "место1", "место2", "место3" };
+            var locations = new[] { "OldCity(Ул.Дубко 17)", "Общага(Ул.Дзержинского 35/1)", "Договорное" };
             var locationButtons = locations.Select(loc => InlineKeyboardButton.WithCallbackData(loc, $"location_{loc}")).ToArray();
             var locationKeyboard = new InlineKeyboardMarkup(locationButtons.Select(b => new[] { b }).ToArray());
             await botClient.SendTextMessageAsync(chatId, "Выбери место получения:", replyMarkup: locationKeyboard);
         }
 
+
+
         private async Task RequestPickupTime(ITelegramBotClient botClient, long chatId)
         {
             var timeButtons = new List<InlineKeyboardButton>();
-            for (int hour = 17; hour < 21; hour++)
+            for (int hour = 17; hour <= 20; hour++)
             {
-                for (int minute = 0; minute < 60; minute += 10)
+                for (int minute = 0; minute < 60; minute += 30)
                 {
                     var time = $"{hour:D2}:{minute:D2}";
                     timeButtons.Add(InlineKeyboardButton.WithCallbackData(time, $"time_{time}"));
@@ -213,14 +294,14 @@ namespace MyApp.Data
             }
 
             var timeKeyboard = new InlineKeyboardMarkup(timeButtons.Select(b => new[] { b }).ToArray());
-            await botClient.SendTextMessageAsync(chatId, "Выбери место получения:", replyMarkup: timeKeyboard);
+            await botClient.SendTextMessageAsync(chatId, "Выберите время получения:", replyMarkup: timeKeyboard);
         }
 
-        private async Task CompleteOrder(ITelegramBotClient botClient, long chatId)
+        private async Task CompleteOrder(ITelegramBotClient botClient, long chatId, UserSession session)
         {
-            if (_cart.Count == 0)
+            if (session.Cart.Count == 0)
             {
-                await botClient.SendTextMessageAsync(chatId, "Ваша корзина пуста. Пожалуйста, добавьте напитки перед оформлением заказа.");
+                await botClient.SendTextMessageAsync(chatId, "Ваша корзина пуста. Пожалуйста, добавьте товары перед оформлением заказа.");
                 return;
             }
 
@@ -229,9 +310,9 @@ namespace MyApp.Data
 
             var order = new Order
             {
-                Items = _cart,
-                PickupLocation = _location,
-                PickupTime = _pickupTime,
+                Items = session.Cart,
+                PickupLocation = session.Location,
+                PickupTime = session.PickupTime,
                 UserName = userName,
                 UserId = userId,
                 OrderDate = DateTime.Now
@@ -241,7 +322,7 @@ namespace MyApp.Data
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                foreach (var item in _cart)
+                foreach (var item in session.Cart)
                 {
                     var drink = await context.Drinks.FindAsync(item.DrinkId);
                     if (drink != null)
@@ -256,23 +337,24 @@ namespace MyApp.Data
 
             await botClient.SendTextMessageAsync(chatId, "Ваш заказ завершен.");
 
-            ResetBotState();
+            ResetBotState(chatId);
 
-            var inlineKeyboard = new InlineKeyboardMarkup(new[]
-            {
-                InlineKeyboardButton.WithCallbackData("Купить", "buy")
-            });
+            var inlineKeyboard = new InlineKeyboardMarkup(new[] {
+        InlineKeyboardButton.WithCallbackData("Купить", "buy")
+    });
 
             await botClient.SendTextMessageAsync(chatId, "Привет! Я бот. Нажмите 'Купить', чтобы начать.", replyMarkup: inlineKeyboard);
         }
 
-        private void ResetBotState()
+
+        private void ResetBotState(long chatId)
         {
-            _cart.Clear();
-            _location = null;
-            _pickupTime = DateTime.MinValue;
-            _currentDrinkId = 0;
+            if (_userSessions.ContainsKey(chatId))
+            {
+                _userSessions[chatId] = new UserSession();
+            }
         }
+
 
         private Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {

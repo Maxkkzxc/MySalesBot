@@ -18,14 +18,53 @@
                 <DataTemplate>
                     <Frame Padding="10" Margin="5" BackgroundColor="#232323" CornerRadius="10">
                         <StackLayout>
-                            <Label Text="{Binding UserName}" FontSize="Medium" FontAttributes="Bold" HorizontalOptions="Center" TextColor="White" />
-                            <Label Text="{Binding UserId}" FontSize="Medium" FontAttributes="Bold" HorizontalOptions="Center" TextColor="White" />
-                            <Label Text="{Binding OrderDate, StringFormat='Order Date: {0:MM/dd/yyyy HH:mm}'}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
-                            <Label Text="{Binding PickupLocation}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
-                            <Label Text="{Binding PickupTime, StringFormat='Pickup Time: {0:MM/dd/yyyy HH:mm}'}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
+                            <StackLayout Orientation="Horizontal" VerticalOptions="Center" HorizontalOptions="Center">
+                                <Label Text="{Binding UserName}" FontSize="Medium" FontAttributes="Bold" 
+                                       VerticalOptions="Center" HorizontalOptions="Start" TextColor="White">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding BindingContext.CopyCommand, Source={x:Reference OrdersList}}"
+                                                              CommandParameter="{Binding UserName}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                                <Image Source="copy_icon.png" WidthRequest="20" HeightRequest="20" Margin="5,0,0,0" VerticalOptions="Center">
+                                    <Image.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding BindingContext.CopyCommand, Source={x:Reference OrdersList}}"
+                                                              CommandParameter="{Binding UserName}" />
+                                    </Image.GestureRecognizers>
+                                </Image>
+                            </StackLayout>
+
+                            <StackLayout Orientation="Horizontal" VerticalOptions="Center" HorizontalOptions="Center">
+                                <Label Text="{Binding UserId}" FontSize="Medium" FontAttributes="Bold" 
+                                       VerticalOptions="Center" HorizontalOptions="Start" TextColor="White">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding BindingContext.CopyCommand, Source={x:Reference OrdersList}}"
+                                                              CommandParameter="{Binding UserId}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                                <Image Source="copy_icon.png" WidthRequest="20" HeightRequest="20" Margin="5,0,0,0" VerticalOptions="Center">
+                                    <Image.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding BindingContext.CopyCommand, Source={x:Reference OrdersList}}"
+                                                              CommandParameter="{Binding UserId}" />
+                                    </Image.GestureRecognizers>
+                                </Image>
+                            </StackLayout>
+
+                            <Label Text="{Binding OrderDate, StringFormat='Дата заказа: {0:MM/dd/yyyy HH:mm}'}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
+                            <Label Text="{Binding PickupLocation, StringFormat='Место получения: {0}'}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
+                            <Label Text="{Binding PickupTime, StringFormat='Время получения: {0:MM/dd/yyyy HH:mm}'}" FontSize="Medium" HorizontalOptions="Center" TextColor="White" />
                             <toolkit:Expander>
                                 <toolkit:Expander.Header>
-                                    <Label Text="Заказ" FontAttributes="Bold" FontSize="Medium" TextColor="White"/>
+                                    <Label Text="Заказ" 
+                                        FontAttributes="Bold" 
+                                        FontSize="Medium" 
+                                        HorizontalOptions="Center" 
+                                        TextColor="White"
+                                        TextDecorations="Underline">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer />
+                                        </Label.GestureRecognizers>
+                                    </Label>
                                 </toolkit:Expander.Header>
                                 <CollectionView ItemsSource="{Binding Items}">
                                     <CollectionView.ItemTemplate>
@@ -41,13 +80,14 @@
                                 </CollectionView>
                             </toolkit:Expander>
 
+
                             <StackLayout Orientation="Horizontal" Spacing="10" HorizontalOptions="Center" Margin="0,10,0,0">
-                                <Button Text="Confirm"
+                                <Button Text="Подтвердить"
                                         Command="{Binding BindingContext.ConfirmOrderCommand, Source={x:Reference OrdersList}}"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="Green"
                                         TextColor="White"/>
-                                <Button Text="Cancel"
+                                <Button Text="Отменить"
                                         Command="{Binding BindingContext.CancelOrderCommand, Source={x:Reference OrdersList}}"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="Red"

@@ -7,6 +7,9 @@ namespace TelegramBotApp
         public App(IConfiguration configuration)
         {
             InitializeComponent();
+
+
+
             MainPage = new AppShell(configuration);
         }
     }

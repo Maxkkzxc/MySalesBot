@@ -28,5 +28,10 @@ namespace TelegramBotApp
         {
             await Shell.Current.GoToAsync("//OrdersPage");
         }
+
+        private async void OnStatisticsButtonClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//StatisticsPage");
+        }
     }
 }
